@@ -4,6 +4,8 @@
 use std::path::PathBuf;
 use std::{env, fmt::Display, path::Path};
 
+use cmake::Config;
+
 /// Outputs the library-file's prefix as word usable for actual arguments on
 /// commands or paths.
 const fn rustc_linking_word(is_static_link: bool) -> &'static str {
@@ -47,7 +49,17 @@ fn build_opus(is_static: bool) {
     );
 
     println!("cargo:info=Building Opus via CMake.");
-    let opus_build_dir = cmake::build(opus_path);
+
+    let opus_build_dir = {
+        //Disable stack protection on windows MiniGW 
+        println!("cargo:info=Opus stack protection will be disabled!");
+        
+        Config::new(opus_path)
+            .define("OPUS_STACK_PROTECTOR", "OFF")
+            .define("OPUS_FORTIFY_SOURCE", "OFF")
+            .build()
+    };
+
     link_opus(is_static, opus_build_dir.display())
 }
 
